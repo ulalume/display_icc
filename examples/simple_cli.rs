@@ -8,8 +8,7 @@
 //! Run with: cargo run --example simple_cli
 
 use display_icc::{
-    get_primary_display_profile, get_all_display_profiles, 
-    ProfileError, ColorSpace
+    get_all_display_profiles, get_primary_display_profile, ColorSpace, ProfileError,
 };
 
 fn main() {
@@ -22,15 +21,15 @@ fn main() {
             println!("✓ Primary Display Profile:");
             println!("  Name: {}", profile.name);
             println!("  Color Space: {}", profile.color_space);
-            
+
             if let Some(description) = &profile.description {
                 println!("  Description: {}", description);
             }
-            
+
             if let Some(path) = &profile.file_path {
                 println!("  File Path: {}", path.display());
             }
-            
+
             // Check for common color spaces
             match profile.color_space {
                 ColorSpace::RGB => println!("  → This is an RGB color space (most common)"),
@@ -50,21 +49,27 @@ fn main() {
     match get_all_display_profiles() {
         Ok(profiles) => {
             println!("✓ All Display Profiles ({} found):", profiles.len());
-            
+
             if profiles.is_empty() {
                 println!("  No displays with profiles found.");
             } else {
                 for (i, (display, profile)) in profiles.iter().enumerate() {
-                    println!("  {}. Display: {} ({})", 
-                             i + 1, 
-                             display.name, 
-                             if display.is_primary { "Primary" } else { "Secondary" });
+                    println!(
+                        "  {}. Display: {} ({})",
+                        i + 1,
+                        display.name,
+                        if display.is_primary {
+                            "Primary"
+                        } else {
+                            "Secondary"
+                        }
+                    );
                     println!("     Profile: {} ({})", profile.name, profile.color_space);
-                    
+
                     if let Some(path) = &profile.file_path {
                         println!("     File: {}", path.display());
                     }
-                    
+
                     println!();
                 }
             }
@@ -79,7 +84,7 @@ fn main() {
     match display_icc::detect_platform() {
         Ok(platform) => {
             println!("✓ Running on platform: {}", platform);
-            
+
             // Show platform-specific notes
             match platform {
                 display_icc::Platform::MacOS => {
@@ -92,7 +97,9 @@ fn main() {
                 }
                 display_icc::Platform::Windows => {
                     println!("  → Using Win32 Color System API");
-                    println!("  → Profiles typically in C:\\WINDOWS\\System32\\spool\\drivers\\color\\");
+                    println!(
+                        "  → Profiles typically in C:\\WINDOWS\\System32\\spool\\drivers\\color\\"
+                    );
                 }
             }
         }
@@ -111,7 +118,9 @@ fn handle_error(error: &ProfileError) {
         }
         ProfileError::DisplayNotFound(id) => {
             eprintln!("  Help: Display '{}' was not found.", id);
-            eprintln!("        Try running without specifying a display ID to use the primary display.");
+            eprintln!(
+                "        Try running without specifying a display ID to use the primary display."
+            );
         }
         ProfileError::ProfileNotAvailable(display) => {
             eprintln!("  Help: Display '{}' has no ICC profile assigned.", display);

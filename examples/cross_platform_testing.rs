@@ -11,13 +11,11 @@
 //! Run with: cargo run --example cross_platform_testing
 
 use display_icc::{
-    ProfileConfig, ProfileError, Platform,
-    create_provider, create_provider_with_config, detect_platform,
-    get_primary_display_profile, get_all_display_profiles,
-    parse_icc_header
+    create_provider, create_provider_with_config, detect_platform, get_all_display_profiles,
+    get_primary_display_profile, parse_icc_header, Platform, ProfileConfig, ProfileError,
 };
-use std::time::{Duration, Instant};
 use std::collections::HashMap;
+use std::time::{Duration, Instant};
 
 /// Test results for different configurations
 #[derive(Debug)]
@@ -80,7 +78,7 @@ impl CrossPlatformTester {
         self.test_error_conditions();
         self.test_performance();
         self.test_platform_specific_features();
-        
+
         // Print summary
         self.print_test_summary();
     }
@@ -96,12 +94,18 @@ impl CrossPlatformTester {
             Ok(platform) => {
                 let result = TestResult::success(start.elapsed())
                     .with_detail("detected_platform", platform.to_string());
-                self.results.insert("platform_detection".to_string(), result);
-                println!("✅ Platform detection: {} ({:?})", platform, start.elapsed());
+                self.results
+                    .insert("platform_detection".to_string(), result);
+                println!(
+                    "✅ Platform detection: {} ({:?})",
+                    platform,
+                    start.elapsed()
+                );
             }
             Err(e) => {
                 let result = TestResult::failure(start.elapsed(), e.to_string());
-                self.results.insert("platform_detection".to_string(), result);
+                self.results
+                    .insert("platform_detection".to_string(), result);
                 println!("❌ Platform detection failed: {}", e);
             }
         }
@@ -131,8 +135,12 @@ impl CrossPlatformTester {
                     .with_detail("color_space", profile.color_space.to_string())
                     .with_detail("has_file_path", profile.file_path.is_some().to_string());
                 self.results.insert("primary_profile".to_string(), result);
-                println!("✅ Primary profile: {} ({}) - {:?}", 
-                         profile.name, profile.color_space, start.elapsed());
+                println!(
+                    "✅ Primary profile: {} ({}) - {:?}",
+                    profile.name,
+                    profile.color_space,
+                    start.elapsed()
+                );
             }
             Err(e) => {
                 let result = TestResult::failure(start.elapsed(), e.to_string());
@@ -148,12 +156,20 @@ impl CrossPlatformTester {
                 let result = TestResult::success(start.elapsed())
                     .with_detail("display_count", profiles.len().to_string());
                 self.results.insert("all_profiles".to_string(), result);
-                println!("✅ All profiles: {} displays found - {:?}", 
-                         profiles.len(), start.elapsed());
-                
+                println!(
+                    "✅ All profiles: {} displays found - {:?}",
+                    profiles.len(),
+                    start.elapsed()
+                );
+
                 for (i, (display, profile)) in profiles.iter().enumerate() {
-                    println!("   {}. {} -> {} ({})", 
-                             i + 1, display.name, profile.name, profile.color_space);
+                    println!(
+                        "   {}. {} -> {} ({})",
+                        i + 1,
+                        display.name,
+                        profile.name,
+                        profile.color_space
+                    );
                 }
             }
             Err(e) => {
@@ -173,49 +189,55 @@ impl CrossPlatformTester {
 
         let configs = vec![
             ("default", ProfileConfig::default()),
-            ("no_fallback", ProfileConfig {
-                linux_prefer_dbus: true,
-                fallback_enabled: false,
-            }),
+            (
+                "no_fallback",
+                ProfileConfig {
+                    linux_prefer_dbus: true,
+                    fallback_enabled: false,
+                },
+            ),
         ];
 
         // Only test linux_prefer_dbus on Linux
         let mut linux_configs = configs.clone();
         if matches!(self.platform, Platform::Linux) {
-            linux_configs.push(("prefer_command", ProfileConfig {
-                linux_prefer_dbus: false,
-                fallback_enabled: true,
-            }));
+            linux_configs.push((
+                "prefer_command",
+                ProfileConfig {
+                    linux_prefer_dbus: false,
+                    fallback_enabled: true,
+                },
+            ));
         }
 
         for (name, config) in linux_configs {
             let start = Instant::now();
             match create_provider_with_config(config) {
-                Ok(provider) => {
-                    match provider.get_primary_display() {
-                        Ok(display) => {
-                            match provider.get_profile(&display) {
-                                Ok(profile) => {
-                                    let result = TestResult::success(start.elapsed())
-                                        .with_detail("profile_name", profile.name.clone());
-                                    self.results.insert(format!("config_{}", name), result);
-                                    println!("✅ Config '{}': {} - {:?}", 
-                                             name, profile.name, start.elapsed());
-                                }
-                                Err(e) => {
-                                    let result = TestResult::failure(start.elapsed(), e.to_string());
-                                    self.results.insert(format!("config_{}", name), result);
-                                    println!("❌ Config '{}' profile failed: {}", name, e);
-                                }
-                            }
+                Ok(provider) => match provider.get_primary_display() {
+                    Ok(display) => match provider.get_profile(&display) {
+                        Ok(profile) => {
+                            let result = TestResult::success(start.elapsed())
+                                .with_detail("profile_name", profile.name.clone());
+                            self.results.insert(format!("config_{}", name), result);
+                            println!(
+                                "✅ Config '{}': {} - {:?}",
+                                name,
+                                profile.name,
+                                start.elapsed()
+                            );
                         }
                         Err(e) => {
                             let result = TestResult::failure(start.elapsed(), e.to_string());
                             self.results.insert(format!("config_{}", name), result);
-                            println!("❌ Config '{}' display failed: {}", name, e);
+                            println!("❌ Config '{}' profile failed: {}", name, e);
                         }
+                    },
+                    Err(e) => {
+                        let result = TestResult::failure(start.elapsed(), e.to_string());
+                        self.results.insert(format!("config_{}", name), result);
+                        println!("❌ Config '{}' display failed: {}", name, e);
                     }
-                }
+                },
                 Err(e) => {
                     let result = TestResult::failure(start.elapsed(), e.to_string());
                     self.results.insert(format!("config_{}", name), result);
@@ -240,14 +262,15 @@ impl CrossPlatformTester {
                 name: "Fake Display".to_string(),
                 is_primary: false,
             };
-            
+
             match provider.get_profile(&fake_display) {
                 Ok(_) => {
                     println!("⚠️  Unexpected success with fake display");
                 }
                 Err(ProfileError::DisplayNotFound(_)) => {
                     let result = TestResult::success(start.elapsed());
-                    self.results.insert("error_invalid_display".to_string(), result);
+                    self.results
+                        .insert("error_invalid_display".to_string(), result);
                     println!("✅ Invalid display error handling: {:?}", start.elapsed());
                 }
                 Err(e) => {
@@ -284,7 +307,7 @@ impl CrossPlatformTester {
         // Test 1: Repeated profile access
         let iterations = 10;
         let mut durations = Vec::new();
-        
+
         for i in 0..iterations {
             let start = Instant::now();
             match get_primary_display_profile() {
@@ -302,13 +325,14 @@ impl CrossPlatformTester {
             let avg_duration = durations.iter().sum::<Duration>() / durations.len() as u32;
             let min_duration = durations.iter().min().unwrap();
             let max_duration = durations.iter().max().unwrap();
-            
+
             let result = TestResult::success(avg_duration)
                 .with_detail("min_duration", format!("{:?}", min_duration))
                 .with_detail("max_duration", format!("{:?}", max_duration))
                 .with_detail("iterations", iterations.to_string());
-            self.results.insert("performance_repeated".to_string(), result);
-            
+            self.results
+                .insert("performance_repeated".to_string(), result);
+
             println!("✅ Repeated access ({} iterations):", iterations);
             println!("   Average: {:?}", avg_duration);
             println!("   Range: {:?} - {:?}", min_duration, max_duration);
@@ -331,18 +355,23 @@ impl CrossPlatformTester {
                 println!("   • CoreGraphics API integration");
                 println!("   • Multiple display support");
                 println!("   • Built-in display profile handling");
-                
+
                 // Test multiple displays if available
                 if let Ok(provider) = create_provider() {
                     match provider.get_displays() {
                         Ok(displays) => {
-                            let builtin_displays = displays.iter()
-                                .filter(|d| d.name.contains("Built-in") || d.name.contains("Retina"))
+                            let builtin_displays = displays
+                                .iter()
+                                .filter(|d| {
+                                    d.name.contains("Built-in") || d.name.contains("Retina")
+                                })
                                 .count();
                             let external_displays = displays.len() - builtin_displays;
-                            
-                            println!("   ✅ Found {} built-in, {} external displays", 
-                                     builtin_displays, external_displays);
+
+                            println!(
+                                "   ✅ Found {} built-in, {} external displays",
+                                builtin_displays, external_displays
+                            );
                         }
                         Err(e) => println!("   ❌ Display enumeration failed: {}", e),
                     }
@@ -353,28 +382,30 @@ impl CrossPlatformTester {
                 println!("   • colormgr/colord integration");
                 println!("   • D-Bus API vs command-line tool");
                 println!("   • Profile file system access");
-                
+
                 // Test both D-Bus and command preferences
                 let dbus_config = ProfileConfig {
                     linux_prefer_dbus: true,
                     fallback_enabled: false,
                 };
-                
+
                 let command_config = ProfileConfig {
                     linux_prefer_dbus: false,
                     fallback_enabled: false,
                 };
-                
-                let dbus_result = create_provider_with_config(dbus_config)
-                    .and_then(|p| p.get_displays());
-                let command_result = create_provider_with_config(command_config)
-                    .and_then(|p| p.get_displays());
-                
+
+                let dbus_result =
+                    create_provider_with_config(dbus_config).and_then(|p| p.get_displays());
+                let command_result =
+                    create_provider_with_config(command_config).and_then(|p| p.get_displays());
+
                 match (dbus_result, command_result) {
                     (Ok(_), Ok(_)) => println!("   ✅ Both D-Bus and command methods work"),
                     (Ok(_), Err(_)) => println!("   ⚠️  D-Bus works, command method failed"),
                     (Err(_), Ok(_)) => println!("   ⚠️  Command works, D-Bus method failed"),
-                    (Err(e1), Err(e2)) => println!("   ❌ Both methods failed: D-Bus({}), Command({})", e1, e2),
+                    (Err(e1), Err(e2)) => {
+                        println!("   ❌ Both methods failed: D-Bus({}), Command({})", e1, e2)
+                    }
                 }
             }
             Platform::Windows => {
@@ -382,7 +413,7 @@ impl CrossPlatformTester {
                 println!("   • Win32 Color System API");
                 println!("   • Registry-based profile lookup");
                 println!("   • Windows color directory access");
-                
+
                 // Test profile file access
                 if let Ok(provider) = create_provider() {
                     if let Ok(primary) = provider.get_primary_display() {
@@ -390,7 +421,10 @@ impl CrossPlatformTester {
                             Ok(profile) => {
                                 if let Some(path) = &profile.file_path {
                                     if path.exists() {
-                                        println!("   ✅ Profile file accessible: {}", path.display());
+                                        println!(
+                                            "   ✅ Profile file accessible: {}",
+                                            path.display()
+                                        );
                                     } else {
                                         println!("   ⚠️  Profile file path exists but file not found: {}", path.display());
                                     }
@@ -412,34 +446,41 @@ impl CrossPlatformTester {
     fn print_test_summary(&self) {
         println!("📊 Test Summary");
         println!("===============");
-        
+
         let total_tests = self.results.len();
         let passed_tests = self.results.values().filter(|r| r.success).count();
         let failed_tests = total_tests - passed_tests;
-        
+
         println!("Total tests: {}", total_tests);
         println!("Passed: {} ✅", passed_tests);
         println!("Failed: {} ❌", failed_tests);
-        
+
         if failed_tests > 0 {
             println!("\nFailed tests:");
             for (name, result) in &self.results {
                 if !result.success {
-                    println!("  ❌ {}: {}", name, result.error.as_ref().unwrap_or(&"Unknown error".to_string()));
+                    println!(
+                        "  ❌ {}: {}",
+                        name,
+                        result
+                            .error
+                            .as_ref()
+                            .unwrap_or(&"Unknown error".to_string())
+                    );
                 }
             }
         }
-        
+
         println!("\nPerformance summary:");
         for (name, result) in &self.results {
             if result.success && result.duration > Duration::from_millis(100) {
                 println!("  ⏱️  {}: {:?}", name, result.duration);
             }
         }
-        
+
         let success_rate = (passed_tests as f64 / total_tests as f64) * 100.0;
         println!("\nSuccess rate: {:.1}%", success_rate);
-        
+
         if success_rate >= 90.0 {
             println!("🎉 Excellent compatibility!");
         } else if success_rate >= 75.0 {

@@ -1,6 +1,8 @@
 //! Linux-specific implementation using colormgr and D-Bus
 
-use crate::{Display, DisplayProfileProvider, ProfileConfig, ProfileError, ProfileInfo, ColorSpace};
+use crate::{
+    ColorSpace, Display, DisplayProfileProvider, ProfileConfig, ProfileError, ProfileInfo,
+};
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -69,7 +71,7 @@ impl LinuxProfileProvider {
     fn execute_colormgr(&self, args: &[&str]) -> Result<String, ProfileError> {
         if !self.is_colormgr_available() {
             return Err(ProfileError::SystemError(
-                "colormgr command not found. Please install colord package.".to_string()
+                "colormgr command not found. Please install colord package.".to_string(),
             ));
         }
 
@@ -81,7 +83,8 @@ impl LinuxProfileProvider {
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             return Err(ProfileError::SystemError(format!(
-                "colormgr command failed: {}", stderr
+                "colormgr command failed: {}",
+                stderr
             )));
         }
 
@@ -112,7 +115,11 @@ impl LinuxProfileProvider {
                 }
 
                 // Start new device
-                let id = line.strip_prefix("Device ID:").unwrap_or("").trim().to_string();
+                let id = line
+                    .strip_prefix("Device ID:")
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
                 current_device = Some(ColormgrDevice {
                     id,
                     kind: String::new(),
@@ -127,9 +134,17 @@ impl LinuxProfileProvider {
                 } else if line.starts_with("Model:") {
                     device.model = line.strip_prefix("Model:").unwrap_or("").trim().to_string();
                 } else if line.starts_with("Vendor:") {
-                    device.vendor = line.strip_prefix("Vendor:").unwrap_or("").trim().to_string();
+                    device.vendor = line
+                        .strip_prefix("Vendor:")
+                        .unwrap_or("")
+                        .trim()
+                        .to_string();
                 } else if line.starts_with("Serial:") {
-                    device.serial = line.strip_prefix("Serial:").unwrap_or("").trim().to_string();
+                    device.serial = line
+                        .strip_prefix("Serial:")
+                        .unwrap_or("")
+                        .trim()
+                        .to_string();
                 } else if line.starts_with("Profile ") && line.contains(":") {
                     // Extract profile ID from "Profile 1: profile_id"
                     if let Some(profile_id) = line.split(':').nth(1) {
@@ -160,7 +175,11 @@ impl LinuxProfileProvider {
     }
 
     /// Parse colormgr get-profile output
-    fn parse_colormgr_profile(&self, output: &str, profile_id: &str) -> Result<ColormgrProfile, ProfileError> {
+    fn parse_colormgr_profile(
+        &self,
+        output: &str,
+        profile_id: &str,
+    ) -> Result<ColormgrProfile, ProfileError> {
         let mut profile = ColormgrProfile {
             id: profile_id.to_string(),
             filename: None,
@@ -185,7 +204,11 @@ impl LinuxProfileProvider {
             } else if line.starts_with("Kind:") {
                 profile.kind = line.strip_prefix("Kind:").unwrap_or("").trim().to_string();
             } else if line.starts_with("Colorspace:") {
-                profile.colorspace = line.strip_prefix("Colorspace:").unwrap_or("").trim().to_string();
+                profile.colorspace = line
+                    .strip_prefix("Colorspace:")
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
             }
         }
 
@@ -203,8 +226,7 @@ impl LinuxProfileProvider {
 
     /// Load ICC profile data from file
     fn load_profile_data(&self, file_path: &PathBuf) -> Result<Vec<u8>, ProfileError> {
-        std::fs::read(file_path)
-            .map_err(|e| ProfileError::IoError(e.to_string()))
+        std::fs::read(file_path).map_err(|e| ProfileError::IoError(e.to_string()))
     }
 
     /// Check if D-Bus API is available and preferred
@@ -224,14 +246,12 @@ impl LinuxProfileProvider {
         match Connection::new_system() {
             Ok(conn) => {
                 // Try to create a proxy to the colord service
-                let proxy = conn.with_proxy(COLORD_SERVICE, COLORD_PATH, Duration::from_millis(1000));
+                let proxy =
+                    conn.with_proxy(COLORD_SERVICE, COLORD_PATH, Duration::from_millis(1000));
 
                 // Try a simple method call to check if the service is available
-                let result: Result<(Vec<dbus::Path>,), dbus::Error> = proxy.method_call(
-                    COLORD_INTERFACE,
-                    "GetDevices",
-                    ()
-                );
+                let result: Result<(Vec<dbus::Path>,), dbus::Error> =
+                    proxy.method_call(COLORD_INTERFACE, "GetDevices", ());
 
                 result.is_ok()
             }
@@ -268,7 +288,11 @@ impl LinuxProfileProvider {
 
     /// Get device information via D-Bus
     #[cfg(feature = "dbus-support")]
-    fn get_dbus_device_info(&self, conn: &Connection, device_path: &dbus::Path) -> Result<ColormgrDevice, ProfileError> {
+    fn get_dbus_device_info(
+        &self,
+        conn: &Connection,
+        device_path: &dbus::Path,
+    ) -> Result<ColormgrDevice, ProfileError> {
         let proxy = conn.with_proxy(COLORD_SERVICE, device_path, Duration::from_millis(2000));
 
         // Get device properties
@@ -331,7 +355,8 @@ impl LinuxProfileProvider {
             .map_err(|e| ProfileError::SystemError(format!("D-Bus GetProfiles failed: {}", e)))?;
 
         for profile_path in profile_paths {
-            let profile_proxy = conn.with_proxy(COLORD_SERVICE, &profile_path, Duration::from_millis(2000));
+            let profile_proxy =
+                conn.with_proxy(COLORD_SERVICE, &profile_path, Duration::from_millis(2000));
 
             let path_profile_id: String = profile_proxy
                 .get("org.freedesktop.ColorManager.Profile", "ProfileId")
@@ -356,7 +381,11 @@ impl LinuxProfileProvider {
 
                 return Ok(ColormgrProfile {
                     id: profile_id.to_string(),
-                    filename: if filename.is_empty() { None } else { Some(PathBuf::from(filename)) },
+                    filename: if filename.is_empty() {
+                        None
+                    } else {
+                        Some(PathBuf::from(filename))
+                    },
                     title: if title.is_empty() { None } else { Some(title) },
                     kind,
                     colorspace,
@@ -364,7 +393,10 @@ impl LinuxProfileProvider {
             }
         }
 
-        Err(ProfileError::ProfileNotAvailable(format!("Profile {} not found via D-Bus", profile_id)))
+        Err(ProfileError::ProfileNotAvailable(format!(
+            "Profile {} not found via D-Bus",
+            profile_id
+        )))
     }
 
     /// Fallback to file system scanning when other methods fail
@@ -382,7 +414,10 @@ impl LinuxProfileProvider {
             if let Ok(entries) = std::fs::read_dir(dir) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    if path.extension().map_or(false, |ext| ext == "icc" || ext == "icm") {
+                    if path
+                        .extension()
+                        .map_or(false, |ext| ext == "icc" || ext == "icm")
+                    {
                         profiles.push(path);
                     }
                 }
@@ -393,7 +428,10 @@ impl LinuxProfileProvider {
     }
 
     /// Convert ColormgrDevice list to Display list
-    fn convert_devices_to_displays(&self, colormgr_devices: Vec<ColormgrDevice>) -> Result<Vec<Display>, ProfileError> {
+    fn convert_devices_to_displays(
+        &self,
+        colormgr_devices: Vec<ColormgrDevice>,
+    ) -> Result<Vec<Display>, ProfileError> {
         let mut displays = Vec::new();
         for (index, device) in colormgr_devices.iter().enumerate() {
             let display_name = if !device.model.is_empty() {
@@ -415,7 +453,7 @@ impl LinuxProfileProvider {
 
         if displays.is_empty() {
             return Err(ProfileError::SystemError(
-                "No display devices found".to_string()
+                "No display devices found".to_string(),
             ));
         }
 
@@ -434,7 +472,7 @@ impl DisplayProfileProvider for LinuxProfileProvider {
 
             if !self.config.fallback_enabled {
                 return Err(ProfileError::SystemError(
-                    "D-Bus method failed and fallback is disabled".to_string()
+                    "D-Bus method failed and fallback is disabled".to_string(),
                 ));
             }
         }
@@ -449,16 +487,14 @@ impl DisplayProfileProvider for LinuxProfileProvider {
 
                 // Final fallback: return a generic display if we can find any profiles
                 match self.scan_filesystem_profiles() {
-                    Ok(profiles) if !profiles.is_empty() => {
-                        Ok(vec![Display {
-                            id: "filesystem-fallback".to_string(),
-                            name: "Generic Display".to_string(),
-                            is_primary: true,
-                        }])
-                    }
+                    Ok(profiles) if !profiles.is_empty() => Ok(vec![Display {
+                        id: "filesystem-fallback".to_string(),
+                        name: "Generic Display".to_string(),
+                        is_primary: true,
+                    }]),
                     _ => Err(ProfileError::SystemError(
-                        "No display devices found via any method".to_string()
-                    ))
+                        "No display devices found via any method".to_string(),
+                    )),
                 }
             }
         }
@@ -478,7 +514,8 @@ impl DisplayProfileProvider for LinuxProfileProvider {
             let profiles = self.scan_filesystem_profiles()?;
             if let Some(profile_path) = profiles.first() {
                 return Ok(ProfileInfo {
-                    name: profile_path.file_stem()
+                    name: profile_path
+                        .file_stem()
                         .and_then(|s| s.to_str())
                         .unwrap_or("Unknown Profile")
                         .to_string(),
@@ -496,8 +533,7 @@ impl DisplayProfileProvider for LinuxProfileProvider {
                 if let Some(device) = devices.iter().find(|d| d.id == display.id) {
                     if let Some(profile_id) = device.profiles.first() {
                         if let Ok(profile) = self.get_dbus_profile(profile_id) {
-                            let profile_name = profile.title
-                                .unwrap_or_else(|| profile.id.clone());
+                            let profile_name = profile.title.unwrap_or_else(|| profile.id.clone());
 
                             return Ok(ProfileInfo {
                                 name: profile_name,
@@ -512,7 +548,7 @@ impl DisplayProfileProvider for LinuxProfileProvider {
 
             if !self.config.fallback_enabled {
                 return Err(ProfileError::SystemError(
-                    "D-Bus method failed and fallback is disabled".to_string()
+                    "D-Bus method failed and fallback is disabled".to_string(),
                 ));
             }
         }
@@ -527,12 +563,15 @@ impl DisplayProfileProvider for LinuxProfileProvider {
             .ok_or_else(|| ProfileError::DisplayNotFound(display.id.clone()))?;
 
         // Get the first profile for this device
-        let profile_id = device.profiles.first()
+        let profile_id = device
+            .profiles
+            .first()
             .ok_or_else(|| ProfileError::ProfileNotAvailable(display.id.clone()))?;
 
         let colormgr_profile = self.get_colormgr_profile(profile_id)?;
 
-        let profile_name = colormgr_profile.title
+        let profile_name = colormgr_profile
+            .title
             .unwrap_or_else(|| colormgr_profile.id.clone());
 
         Ok(ProfileInfo {
@@ -546,10 +585,12 @@ impl DisplayProfileProvider for LinuxProfileProvider {
     fn get_profile_data(&self, display: &Display) -> Result<Vec<u8>, ProfileError> {
         let profile_info = self.get_profile(display)?;
 
-        let file_path = profile_info.file_path
-            .ok_or_else(|| ProfileError::ProfileNotAvailable(
-                format!("No file path available for display {}", display.id)
-            ))?;
+        let file_path = profile_info.file_path.ok_or_else(|| {
+            ProfileError::ProfileNotAvailable(format!(
+                "No file path available for display {}",
+                display.id
+            ))
+        })?;
 
         self.load_profile_data(&file_path)
     }
@@ -584,21 +625,33 @@ Profile 1:          icc-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6
         assert_eq!(devices.len(), 2);
 
         let first_device = &devices[0];
-        assert_eq!(first_device.id, "xrandr-Goldstar Company Ltd-LG ULTRAWIDE-0x00000101");
+        assert_eq!(
+            first_device.id,
+            "xrandr-Goldstar Company Ltd-LG ULTRAWIDE-0x00000101"
+        );
         assert_eq!(first_device.kind, "display");
         assert_eq!(first_device.model, "LG ULTRAWIDE");
         assert_eq!(first_device.vendor, "Goldstar Company Ltd");
         assert_eq!(first_device.serial, "0x00000101");
         assert_eq!(first_device.profiles.len(), 2);
-        assert_eq!(first_device.profiles[0], "icc-2c9c8b0c8e5c4e9b8f7a6d5c4b3a2918");
-        assert_eq!(first_device.profiles[1], "icc-b7f8e9d0c1a2b3c4d5e6f7a8b9c0d1e2");
+        assert_eq!(
+            first_device.profiles[0],
+            "icc-2c9c8b0c8e5c4e9b8f7a6d5c4b3a2918"
+        );
+        assert_eq!(
+            first_device.profiles[1],
+            "icc-b7f8e9d0c1a2b3c4d5e6f7a8b9c0d1e2"
+        );
 
         let second_device = &devices[1];
         assert_eq!(second_device.id, "xrandr-Dell Inc.-DELL U2415-HT8XN64P0D2S");
         assert_eq!(second_device.model, "DELL U2415");
         assert_eq!(second_device.vendor, "Dell Inc.");
         assert_eq!(second_device.profiles.len(), 1);
-        assert_eq!(second_device.profiles[0], "icc-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6");
+        assert_eq!(
+            second_device.profiles[0],
+            "icc-a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"
+        );
     }
 
     #[test]
@@ -635,10 +688,15 @@ Kind:               display-device
 Colorspace:         rgb
         "#;
 
-        let profile = provider.parse_colormgr_profile(sample_output, "test-id").unwrap();
+        let profile = provider
+            .parse_colormgr_profile(sample_output, "test-id")
+            .unwrap();
 
         assert_eq!(profile.id, "test-id");
-        assert_eq!(profile.filename, Some(PathBuf::from("/usr/share/color/icc/sRGB.icc")));
+        assert_eq!(
+            profile.filename,
+            Some(PathBuf::from("/usr/share/color/icc/sRGB.icc"))
+        );
         assert_eq!(profile.title, Some("sRGB IEC61966-2.1".to_string()));
         assert_eq!(profile.kind, "display-device");
         assert_eq!(profile.colorspace, "rgb");
@@ -655,7 +713,9 @@ Kind:               display-device
 Colorspace:         rgb
         "#;
 
-        let profile = provider.parse_colormgr_profile(sample_output, "test-id").unwrap();
+        let profile = provider
+            .parse_colormgr_profile(sample_output, "test-id")
+            .unwrap();
 
         assert_eq!(profile.filename, None);
         assert_eq!(profile.title, Some("Built-in sRGB".to_string()));

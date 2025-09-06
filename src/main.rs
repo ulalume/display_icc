@@ -43,10 +43,7 @@
 //! ```
 
 use clap::{Parser, Subcommand, ValueEnum};
-use display_icc::{
-    parse_icc_header, ProfileError, ProfileConfig
-};
-use serde_json;
+use display_icc::{parse_icc_header, ProfileConfig, ProfileError};
 use std::fs;
 
 /// Cross-platform tool for retrieving display ICC profiles
@@ -102,7 +99,7 @@ enum Commands {
         /// Output file path for the ICC profile
         #[arg(short, long)]
         output: String,
-        
+
         /// Display ID to export (defaults to primary display)
         #[arg(short, long)]
         display: Option<String>,
@@ -125,7 +122,7 @@ enum OutputFormat {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    
+
     // Create configuration based on CLI arguments
     let config = ProfileConfig {
         linux_prefer_dbus: !cli.prefer_command,
@@ -151,18 +148,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn handle_info_command(
-    display_id: Option<String>, 
-    cli: &Cli, 
-    config: ProfileConfig
+    display_id: Option<String>,
+    cli: &Cli,
+    config: ProfileConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let provider = display_icc::create_provider_with_config(config)?;
-    
+
     let (display, profile) = if let Some(id) = display_id {
         // Find specific display
         let displays = provider.get_displays()?;
-        let display = displays.into_iter()
+        let display = displays
+            .into_iter()
             .find(|d| d.id == id)
-            .ok_or_else(|| ProfileError::DisplayNotFound(id))?;
+            .ok_or(ProfileError::DisplayNotFound(id))?;
         let profile = provider.get_profile(&display)?;
         (display, profile)
     } else {
@@ -177,15 +175,15 @@ fn handle_info_command(
             println!("Display: {} ({})", display.name, display.id);
             println!("Primary: {}", display.is_primary);
             println!("Profile: {}", profile.name);
-            
+
             if let Some(desc) = &profile.description {
                 println!("Description: {}", desc);
             }
-            
+
             if let Some(path) = &profile.file_path {
                 println!("File path: {}", path.display());
             }
-            
+
             println!("Color space: {}", profile.color_space);
 
             if cli.verbose {
@@ -193,21 +191,21 @@ fn handle_info_command(
                 match provider.get_profile_data(&display) {
                     Ok(icc_data) => {
                         println!("ICC profile size: {} bytes", icc_data.len());
-                        
+
                         if let Ok(header) = parse_icc_header(&icc_data) {
                             println!("ICC version: {}.{}", header.version.0, header.version.1);
                             println!("Device class: {}", header.device_class);
                             println!("Data color space: {}", header.data_color_space);
                             println!("Connection space: {}", header.connection_space);
-                            
+
                             if let Some(datetime) = &header.creation_datetime {
                                 println!("Created: {}", datetime);
                             }
-                            
+
                             if !header.device_manufacturer.is_empty() {
                                 println!("Manufacturer: {}", header.device_manufacturer);
                             }
-                            
+
                             if !header.device_model.is_empty() {
                                 println!("Model: {}", header.device_model);
                             }
@@ -237,7 +235,7 @@ fn handle_info_command(
             if cli.verbose {
                 if let Ok(icc_data) = provider.get_profile_data(&display) {
                     json_output["icc_size"] = serde_json::Value::Number(icc_data.len().into());
-                    
+
                     if let Ok(header) = parse_icc_header(&icc_data) {
                         json_output["icc_header"] = serde_json::json!({
                             "version": format!("{}.{}", header.version.0, header.version.1),
@@ -267,15 +265,15 @@ fn handle_list_command(cli: &Cli, config: ProfileConfig) -> Result<(), Box<dyn s
     match cli.format.as_ref().unwrap_or(&OutputFormat::Text) {
         OutputFormat::Text => {
             println!("Available displays:");
-            
+
             for display in displays {
                 println!("\nDisplay: {} ({})", display.name, display.id);
                 println!("  Primary: {}", display.is_primary);
-                
+
                 match provider.get_profile(&display) {
                     Ok(profile) => {
                         println!("  Profile: {}", profile.name);
-                        
+
                         if cli.verbose {
                             if let Some(desc) = &profile.description {
                                 println!("  Description: {}", desc);
@@ -284,7 +282,7 @@ fn handle_list_command(cli: &Cli, config: ProfileConfig) -> Result<(), Box<dyn s
                                 println!("  File path: {}", path.display());
                             }
                             println!("  Color space: {}", profile.color_space);
-                            
+
                             if let Ok(icc_data) = provider.get_profile_data(&display) {
                                 println!("  ICC size: {} bytes", icc_data.len());
                             }
@@ -301,7 +299,7 @@ fn handle_list_command(cli: &Cli, config: ProfileConfig) -> Result<(), Box<dyn s
         }
         OutputFormat::Json => {
             let mut json_displays = Vec::new();
-            
+
             for display in displays {
                 let mut display_json = serde_json::json!({
                     "id": display.id,
@@ -320,7 +318,8 @@ fn handle_list_command(cli: &Cli, config: ProfileConfig) -> Result<(), Box<dyn s
 
                         if cli.verbose {
                             if let Ok(icc_data) = provider.get_profile_data(&display) {
-                                display_json["icc_size"] = serde_json::Value::Number(icc_data.len().into());
+                                display_json["icc_size"] =
+                                    serde_json::Value::Number(icc_data.len().into());
                             }
                         }
                     }
@@ -350,15 +349,16 @@ fn handle_export_command(
     output_path: String,
     display_id: Option<String>,
     cli: &Cli,
-    config: ProfileConfig
+    config: ProfileConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let provider = display_icc::create_provider_with_config(config)?;
-    
+
     let display = if let Some(id) = display_id {
         let displays = provider.get_displays()?;
-        displays.into_iter()
+        displays
+            .into_iter()
             .find(|d| d.id == id)
-            .ok_or_else(|| ProfileError::DisplayNotFound(id))?
+            .ok_or(ProfileError::DisplayNotFound(id))?
     } else {
         provider.get_primary_display()?
     };
@@ -368,7 +368,10 @@ fn handle_export_command(
 
     match cli.format.as_ref().unwrap_or(&OutputFormat::Text) {
         OutputFormat::Text => {
-            println!("Exported ICC profile for display '{}' to '{}'", display.name, output_path);
+            println!(
+                "Exported ICC profile for display '{}' to '{}'",
+                display.name, output_path
+            );
             println!("Profile size: {} bytes", icc_data.len());
         }
         OutputFormat::Json => {
@@ -391,15 +394,16 @@ fn handle_export_command(
 fn handle_header_command(
     display_id: Option<String>,
     cli: &Cli,
-    config: ProfileConfig
+    config: ProfileConfig,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let provider = display_icc::create_provider_with_config(config)?;
-    
+
     let display = if let Some(id) = display_id {
         let displays = provider.get_displays()?;
-        displays.into_iter()
+        displays
+            .into_iter()
             .find(|d| d.id == id)
-            .ok_or_else(|| ProfileError::DisplayNotFound(id))?
+            .ok_or(ProfileError::DisplayNotFound(id))?
     } else {
         provider.get_primary_display()?
     };
@@ -409,28 +413,31 @@ fn handle_header_command(
 
     match cli.format.as_ref().unwrap_or(&OutputFormat::Text) {
         OutputFormat::Text => {
-            println!("ICC Profile Header for display: {} ({})", display.name, display.id);
+            println!(
+                "ICC Profile Header for display: {} ({})",
+                display.name, display.id
+            );
             println!("Profile size: {} bytes", header.profile_size);
             println!("Version: {}.{}", header.version.0, header.version.1);
             println!("Device class: {}", header.device_class);
             println!("Data color space: {}", header.data_color_space);
             println!("Connection space: {}", header.connection_space);
-            
+
             if let Some(datetime) = &header.creation_datetime {
                 println!("Created: {}", datetime);
             }
-            
+
             println!("Platform: {}", header.platform);
             println!("Flags: 0x{:08X}", header.flags);
-            
+
             if !header.preferred_cmm.is_empty() {
                 println!("Preferred CMM: {}", header.preferred_cmm);
             }
-            
+
             if !header.device_manufacturer.is_empty() {
                 println!("Device manufacturer: {}", header.device_manufacturer);
             }
-            
+
             if !header.device_model.is_empty() {
                 println!("Device model: {}", header.device_model);
             }

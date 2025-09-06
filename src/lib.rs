@@ -1,7 +1,7 @@
 //! # display_icc
 //!
 //! A cross-platform Rust library for retrieving display ICC profiles on macOS, Linux, and Windows.
-//! 
+//!
 //! This library provides a unified API for accessing the active ICC color profiles associated with
 //! displays across different operating systems, abstracting away platform-specific implementations.
 //!
@@ -54,7 +54,7 @@
 //!     // Get all display profiles
 //!     let all_profiles = get_all_display_profiles()?;
 //!     for (display, profile) in all_profiles {
-//!         println!("Display '{}': {} ({})", 
+//!         println!("Display '{}': {} ({})",
 //!                  display.name, profile.name, profile.color_space);
 //!     }
 //!
@@ -225,13 +225,13 @@ pub struct Display {
     /// within the system. The format varies by platform but is guaranteed to be
     /// consistent for the same physical display across program runs.
     pub id: String,
-    
+
     /// Human-readable name of the display.
     ///
     /// This is typically the manufacturer and model name of the display,
     /// or a system-assigned name for built-in displays.
     pub name: String,
-    
+
     /// Whether this is the primary display.
     ///
     /// The primary display is typically where the desktop wallpaper is shown
@@ -273,13 +273,13 @@ pub struct ProfileInfo {
     /// This is typically extracted from the ICC profile's description tag
     /// or provided by the system's color management APIs.
     pub name: String,
-    
+
     /// Optional description of the profile.
     ///
     /// Additional descriptive text about the profile, if available.
     /// This may include manufacturer information, intended use, or other details.
     pub description: Option<String>,
-    
+
     /// File system path to the profile file.
     ///
     /// The full path to the ICC profile file on disk, if available.
@@ -290,7 +290,7 @@ pub struct ProfileInfo {
     /// - **Linux**: Usually in `/usr/share/color/icc/` or `~/.local/share/icc/`
     /// - **Windows**: Commonly in `C:\WINDOWS\System32\spool\drivers\color\`
     pub file_path: Option<PathBuf>,
-    
+
     /// Color space of the profile.
     ///
     /// The primary color space that this profile represents.
@@ -327,13 +327,13 @@ pub enum ColorSpace {
     /// - Adobe RGB (professional displays)
     /// - Rec. 2020 (HDR displays)
     RGB,
-    
+
     /// Lab color space (some high-precision displays).
     ///
     /// CIE Lab color space, used by some professional and scientific displays.
     /// Less common than RGB but provides device-independent color representation.
     Lab,
-    
+
     /// Unknown or unsupported color space.
     ///
     /// Used when the profile's color space cannot be determined or is not
@@ -391,7 +391,7 @@ pub struct ProfileConfig {
     ///
     /// **Default**: `true`
     pub linux_prefer_dbus: bool,
-    
+
     /// Enable fallback mechanisms when primary methods fail.
     ///
     /// When `true`, the library will attempt alternative methods if the primary
@@ -455,14 +455,14 @@ pub enum ProfileError {
     /// by the library (i.e., not macOS, Linux, or Windows).
     #[error("Platform not supported")]
     UnsupportedPlatform,
-    
+
     /// The specified display was not found.
     ///
     /// This error occurs when trying to access a display that doesn't exist
     /// or is no longer available (e.g., after disconnecting an external monitor).
     #[error("Display not found: {0}")]
     DisplayNotFound(String),
-    
+
     /// No profile is available for the specified display.
     ///
     /// This error occurs when a display exists but has no ICC profile assigned.
@@ -470,7 +470,7 @@ pub enum ProfileError {
     /// no color management configured.
     #[error("Profile not available for display: {0}")]
     ProfileNotAvailable(String),
-    
+
     /// An error occurred in the system API.
     ///
     /// This error wraps platform-specific API failures, such as:
@@ -479,7 +479,7 @@ pub enum ProfileError {
     /// - Win32 API failures on Windows
     #[error("System API error: {0}")]
     SystemError(String),
-    
+
     /// An I/O error occurred.
     ///
     /// This error occurs when file operations fail, such as:
@@ -488,7 +488,7 @@ pub enum ProfileError {
     /// - File not found or corrupted profile files
     #[error("IO error: {0}")]
     IoError(String),
-    
+
     /// An error occurred while parsing data.
     ///
     /// This error occurs when:
@@ -560,7 +560,7 @@ pub trait DisplayProfileProvider {
     /// - **Linux**: Parses `colormgr get-devices` output or queries D-Bus
     /// - **Windows**: Uses Win32 display enumeration APIs
     fn get_displays(&self) -> Result<Vec<Display>, ProfileError>;
-    
+
     /// Get the primary display.
     ///
     /// Returns the display that is designated as the primary display by the
@@ -579,7 +579,7 @@ pub trait DisplayProfileProvider {
     /// - **Linux**: Looks for displays marked as primary in colormgr/colord
     /// - **Windows**: Uses `GetPrimaryMonitorInfo` or similar APIs
     fn get_primary_display(&self) -> Result<Display, ProfileError>;
-    
+
     /// Get profile information for a specific display.
     ///
     /// Retrieves the ICC profile metadata associated with the given display,
@@ -602,7 +602,7 @@ pub trait DisplayProfileProvider {
     /// - **Linux**: Queries colormgr/colord for device profile associations
     /// - **Windows**: Uses Win32 APIs to get profile file paths and reads metadata
     fn get_profile(&self, display: &Display) -> Result<ProfileInfo, ProfileError>;
-    
+
     /// Get raw ICC profile data for a specific display.
     ///
     /// Retrieves the complete ICC profile binary data associated with the
@@ -656,17 +656,17 @@ pub fn detect_platform() -> Result<Platform, ProfileError> {
     {
         Ok(Platform::MacOS)
     }
-    
+
     #[cfg(target_os = "linux")]
     {
         Ok(Platform::Linux)
     }
-    
+
     #[cfg(target_os = "windows")]
     {
         Ok(Platform::Windows)
     }
-    
+
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {
         Err(ProfileError::UnsupportedPlatform)
@@ -714,17 +714,17 @@ pub fn create_provider() -> Result<Box<dyn DisplayProfileProvider>, ProfileError
     {
         Ok(Box::new(MacOSProfileProvider::new()))
     }
-    
+
     #[cfg(target_os = "linux")]
     {
         Ok(Box::new(LinuxProfileProvider::new()))
     }
-    
+
     #[cfg(target_os = "windows")]
     {
         Ok(Box::new(WindowsProfileProvider::new()))
     }
-    
+
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {
         Err(ProfileError::UnsupportedPlatform)
@@ -790,22 +790,24 @@ pub fn create_provider() -> Result<Box<dyn DisplayProfileProvider>, ProfileError
 /// - **macOS**: Only `fallback_enabled` has effect
 /// - **Linux**: All configuration options are used
 /// - **Windows**: Only `fallback_enabled` has effect
-pub fn create_provider_with_config(config: ProfileConfig) -> Result<Box<dyn DisplayProfileProvider>, ProfileError> {
+pub fn create_provider_with_config(
+    config: ProfileConfig,
+) -> Result<Box<dyn DisplayProfileProvider>, ProfileError> {
     #[cfg(target_os = "macos")]
     {
         Ok(Box::new(MacOSProfileProvider::with_config(config)))
     }
-    
+
     #[cfg(target_os = "linux")]
     {
         Ok(Box::new(LinuxProfileProvider::with_config(config)))
     }
-    
+
     #[cfg(target_os = "windows")]
     {
         Ok(Box::new(WindowsProfileProvider::with_config(config)))
     }
-    
+
     #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
     {
         Err(ProfileError::UnsupportedPlatform)
@@ -830,18 +832,18 @@ pub fn create_provider_with_config(config: ProfileConfig) -> Result<Box<dyn Disp
 ///
 /// # fn example() -> Result<(), display_icc::ProfileError> {
 /// let profile = get_primary_display_profile()?;
-/// 
+///
 /// println!("Primary display profile: {}", profile.name);
 /// println!("Color space: {}", profile.color_space);
-/// 
+///
 /// if let Some(description) = &profile.description {
 ///     println!("Description: {}", description);
 /// }
-/// 
+///
 /// if let Some(path) = &profile.file_path {
 ///     println!("Profile file: {}", path.display());
 /// }
-/// 
+///
 /// // Check if it's an RGB profile (most common)
 /// if profile.color_space == ColorSpace::RGB {
 ///     println!("This is an RGB color space profile");
@@ -908,7 +910,9 @@ pub fn get_primary_display_profile() -> Result<ProfileInfo, ProfileError> {
 /// # Ok(())
 /// # }
 /// ```
-pub fn get_primary_display_profile_with_config(config: ProfileConfig) -> Result<ProfileInfo, ProfileError> {
+pub fn get_primary_display_profile_with_config(
+    config: ProfileConfig,
+) -> Result<ProfileInfo, ProfileError> {
     let provider = create_provider_with_config(config)?;
     let display = provider.get_primary_display()?;
     provider.get_profile(&display)
@@ -934,11 +938,11 @@ pub fn get_primary_display_profile_with_config(config: ProfileConfig) -> Result<
 ///
 /// # fn example() -> Result<(), display_icc::ProfileError> {
 /// let all_profiles = get_all_display_profiles()?;
-/// 
+///
 /// println!("Found {} displays with profiles:", all_profiles.len());
-/// 
+///
 /// for (display, profile) in all_profiles {
-///     println!("Display: {} ({})", display.name, 
+///     println!("Display: {} ({})", display.name,
 ///              if display.is_primary { "Primary" } else { "Secondary" });
 ///     println!("  Profile: {} ({})", profile.name, profile.color_space);
 ///     
@@ -965,7 +969,7 @@ pub fn get_primary_display_profile_with_config(config: ProfileConfig) -> Result<
 pub fn get_all_display_profiles() -> Result<Vec<(Display, ProfileInfo)>, ProfileError> {
     let provider = create_provider()?;
     let displays = provider.get_displays()?;
-    
+
     let mut results = Vec::new();
     for display in displays {
         match provider.get_profile(&display) {
@@ -977,15 +981,17 @@ pub fn get_all_display_profiles() -> Result<Vec<(Display, ProfileInfo)>, Profile
             Err(e) => return Err(e),
         }
     }
-    
+
     Ok(results)
 }
 
 /// Convenience function to get profiles for all displays with custom configuration
-pub fn get_all_display_profiles_with_config(config: ProfileConfig) -> Result<Vec<(Display, ProfileInfo)>, ProfileError> {
+pub fn get_all_display_profiles_with_config(
+    config: ProfileConfig,
+) -> Result<Vec<(Display, ProfileInfo)>, ProfileError> {
     let provider = create_provider_with_config(config)?;
     let displays = provider.get_displays()?;
-    
+
     let mut results = Vec::new();
     for display in displays {
         match provider.get_profile(&display) {
@@ -997,7 +1003,7 @@ pub fn get_all_display_profiles_with_config(config: ProfileConfig) -> Result<Vec
             Err(e) => return Err(e),
         }
     }
-    
+
     Ok(results)
 }
 
@@ -1049,7 +1055,9 @@ pub fn get_primary_display_profile_data() -> Result<Vec<u8>, ProfileError> {
 }
 
 /// Convenience function to get raw ICC profile data for the primary display with custom configuration
-pub fn get_primary_display_profile_data_with_config(config: ProfileConfig) -> Result<Vec<u8>, ProfileError> {
+pub fn get_primary_display_profile_data_with_config(
+    config: ProfileConfig,
+) -> Result<Vec<u8>, ProfileError> {
     let provider = create_provider_with_config(config)?;
     let display = provider.get_primary_display()?;
     provider.get_profile_data(&display)
@@ -1086,9 +1094,10 @@ impl IccHeader {
     /// Parse ICC header from profile data
     pub fn parse(data: &[u8]) -> Result<Self, ProfileError> {
         if data.len() < 128 {
-            return Err(ProfileError::ParseError(
-                format!("ICC profile data too short: {} bytes (minimum 128)", data.len())
-            ));
+            return Err(ProfileError::ParseError(format!(
+                "ICC profile data too short: {} bytes (minimum 128)",
+                data.len()
+            )));
         }
 
         // Helper function to read 4-byte signature as string
@@ -1111,15 +1120,18 @@ impl IccHeader {
         // Parse header fields according to ICC specification
         let profile_size = read_u32_be(0);
         let preferred_cmm = read_signature(4);
-        
+
         // Version is stored as major.minor.bugfix.reserved
         let version_raw = read_u32_be(8);
-        let version = ((version_raw >> 24) as u8, ((version_raw >> 20) & 0x0F) as u8);
-        
+        let version = (
+            (version_raw >> 24) as u8,
+            ((version_raw >> 20) & 0x0F) as u8,
+        );
+
         let device_class = read_signature(12);
         let data_color_space = read_signature(16);
         let connection_space = read_signature(20);
-        
+
         // Date/time is stored as 12 bytes (year, month, day, hour, minute, second as u16 each)
         let creation_datetime = if data[24..36].iter().any(|&b| b != 0) {
             let year = u16::from_be_bytes([data[24], data[25]]);
@@ -1128,13 +1140,15 @@ impl IccHeader {
             let hour = u16::from_be_bytes([data[30], data[31]]);
             let minute = u16::from_be_bytes([data[32], data[33]]);
             let second = u16::from_be_bytes([data[34], data[35]]);
-            
-            Some(format!("{:04}-{:02}-{:02} {:02}:{:02}:{:02}", 
-                        year, month, day, hour, minute, second))
+
+            Some(format!(
+                "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+                year, month, day, hour, minute, second
+            ))
         } else {
             None
         };
-        
+
         let platform = read_signature(40);
         let flags = read_u32_be(44);
         let device_manufacturer = read_signature(48);
@@ -1159,23 +1173,32 @@ impl IccHeader {
     pub fn validate(&self) -> Result<(), ProfileError> {
         // Check if profile size is reasonable (at least 128 bytes for header)
         if self.profile_size < 128 {
-            return Err(ProfileError::ParseError(
-                format!("Invalid profile size: {} bytes", self.profile_size)
-            ));
+            return Err(ProfileError::ParseError(format!(
+                "Invalid profile size: {} bytes",
+                self.profile_size
+            )));
         }
 
         // Check if device class is valid for display profiles
-        if !["mntr", "scnr", "prtr", "link", "spac", "abst", "nmcl"].contains(&self.device_class.as_str()) {
-            return Err(ProfileError::ParseError(
-                format!("Invalid device class: {}", self.device_class)
-            ));
+        if !["mntr", "scnr", "prtr", "link", "spac", "abst", "nmcl"]
+            .contains(&self.device_class.as_str())
+        {
+            return Err(ProfileError::ParseError(format!(
+                "Invalid device class: {}",
+                self.device_class
+            )));
         }
 
         // Check if color space is valid
-        if !["RGB ", "CMYK", "Lab ", "XYZ ", "Luv ", "YCbr", "Yxy ", "HSV ", "HLS ", "CMY "].contains(&self.data_color_space.as_str()) {
-            return Err(ProfileError::ParseError(
-                format!("Invalid data color space: {}", self.data_color_space)
-            ));
+        if ![
+            "RGB ", "CMYK", "Lab ", "XYZ ", "Luv ", "YCbr", "Yxy ", "HSV ", "HLS ", "CMY ",
+        ]
+        .contains(&self.data_color_space.as_str())
+        {
+            return Err(ProfileError::ParseError(format!(
+                "Invalid data color space: {}",
+                self.data_color_space
+            )));
         }
 
         Ok(())
@@ -1245,7 +1268,6 @@ pub fn parse_icc_header(data: &[u8]) -> Result<IccHeader, ProfileError> {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_display_creation() {
         let display = Display {
@@ -1293,8 +1315,14 @@ mod tests {
         };
 
         assert_eq!(profile.name, "sRGB");
-        assert_eq!(profile.description, Some("Standard RGB color space".to_string()));
-        assert_eq!(profile.file_path, Some(PathBuf::from("/path/to/profile.icc")));
+        assert_eq!(
+            profile.description,
+            Some("Standard RGB color space".to_string())
+        );
+        assert_eq!(
+            profile.file_path,
+            Some(PathBuf::from("/path/to/profile.icc"))
+        );
         assert_eq!(profile.color_space, ColorSpace::RGB);
     }
 
@@ -1332,7 +1360,10 @@ mod tests {
         assert_eq!(format!("{}", error), "Display not found: test_display");
 
         let error = ProfileError::ProfileNotAvailable("test_display".to_string());
-        assert_eq!(format!("{}", error), "Profile not available for display: test_display");
+        assert_eq!(
+            format!("{}", error),
+            "Profile not available for display: test_display"
+        );
 
         let error = ProfileError::SystemError("API failed".to_string());
         assert_eq!(format!("{}", error), "System API error: API failed");
@@ -1352,14 +1383,14 @@ mod tests {
     fn test_detect_platform() {
         let platform = detect_platform();
         assert!(platform.is_ok());
-        
+
         // Platform should match the current compilation target
         #[cfg(target_os = "macos")]
         assert_eq!(platform.unwrap(), Platform::MacOS);
-        
+
         #[cfg(target_os = "linux")]
         assert_eq!(platform.unwrap(), Platform::Linux);
-        
+
         #[cfg(target_os = "windows")]
         assert_eq!(platform.unwrap(), Platform::Windows);
     }
@@ -1370,7 +1401,7 @@ mod tests {
         let short_data = vec![0u8; 64];
         let result = IccHeader::parse(&short_data);
         assert!(result.is_err());
-        
+
         if let Err(ProfileError::ParseError(msg)) = result {
             assert!(msg.contains("too short"));
         } else {
@@ -1382,36 +1413,36 @@ mod tests {
     fn test_icc_header_parse_valid_data() {
         // Create minimal valid ICC header (128 bytes)
         let mut data = vec![0u8; 128];
-        
+
         // Profile size (first 4 bytes, big-endian)
         data[0..4].copy_from_slice(&1024u32.to_be_bytes());
-        
+
         // Preferred CMM (bytes 4-7)
         data[4..8].copy_from_slice(b"ADBE");
-        
+
         // Version (bytes 8-11) - version 4.3
         data[8..12].copy_from_slice(&0x04300000u32.to_be_bytes());
-        
+
         // Device class (bytes 12-15)
         data[12..16].copy_from_slice(b"mntr");
-        
+
         // Data color space (bytes 16-19)
         data[16..20].copy_from_slice(b"RGB ");
-        
+
         // Connection space (bytes 20-23)
         data[20..24].copy_from_slice(b"XYZ ");
-        
+
         // Platform (bytes 40-43)
         data[40..44].copy_from_slice(b"APPL");
-        
+
         // Device manufacturer (bytes 48-51)
         data[48..52].copy_from_slice(b"APPL");
-        
+
         // Device model (bytes 52-55)
         data[52..56].copy_from_slice(b"mntr");
 
         let header = IccHeader::parse(&data).expect("Should parse valid header");
-        
+
         assert_eq!(header.profile_size, 1024);
         assert_eq!(header.preferred_cmm, "ADBE");
         assert_eq!(header.version, (4, 3));
@@ -1426,24 +1457,27 @@ mod tests {
     #[test]
     fn test_icc_header_parse_with_datetime() {
         let mut data = vec![0u8; 128];
-        
+
         // Basic required fields
         data[0..4].copy_from_slice(&1024u32.to_be_bytes());
         data[12..16].copy_from_slice(b"mntr");
         data[16..20].copy_from_slice(b"RGB ");
         data[20..24].copy_from_slice(b"XYZ ");
-        
+
         // Date/time: 2023-12-25 14:30:45
         data[24..26].copy_from_slice(&2023u16.to_be_bytes()); // year
-        data[26..28].copy_from_slice(&12u16.to_be_bytes());   // month
-        data[28..30].copy_from_slice(&25u16.to_be_bytes());   // day
-        data[30..32].copy_from_slice(&14u16.to_be_bytes());   // hour
-        data[32..34].copy_from_slice(&30u16.to_be_bytes());   // minute
-        data[34..36].copy_from_slice(&45u16.to_be_bytes());   // second
+        data[26..28].copy_from_slice(&12u16.to_be_bytes()); // month
+        data[28..30].copy_from_slice(&25u16.to_be_bytes()); // day
+        data[30..32].copy_from_slice(&14u16.to_be_bytes()); // hour
+        data[32..34].copy_from_slice(&30u16.to_be_bytes()); // minute
+        data[34..36].copy_from_slice(&45u16.to_be_bytes()); // second
 
         let header = IccHeader::parse(&data).expect("Should parse header with datetime");
-        
-        assert_eq!(header.creation_datetime, Some("2023-12-25 14:30:45".to_string()));
+
+        assert_eq!(
+            header.creation_datetime,
+            Some("2023-12-25 14:30:45".to_string())
+        );
     }
 
     #[test]
@@ -1498,16 +1532,14 @@ mod api_tests {
     use super::*;
     use crate::mock::MockProfileProvider;
 
-
-
     #[test]
     fn test_get_primary_display_profile_success() {
         let provider = MockProfileProvider::with_test_data();
-        
+
         // Simulate the convenience function behavior
         let primary = provider.get_primary_display().unwrap();
         let profile = provider.get_profile(&primary).unwrap();
-        
+
         assert_eq!(profile.name, "sRGB IEC61966-2.1");
         assert_eq!(profile.color_space, ColorSpace::RGB);
         assert!(profile.description.is_some());
@@ -1517,7 +1549,7 @@ mod api_tests {
     #[test]
     fn test_get_primary_display_profile_no_primary() {
         let mut provider = MockProfileProvider::new();
-        
+
         // Add non-primary display
         let display = Display {
             id: "secondary".to_string(),
@@ -1525,10 +1557,10 @@ mod api_tests {
             is_primary: false,
         };
         provider.add_display(display);
-        
+
         let result = provider.get_primary_display();
         assert!(result.is_err());
-        
+
         if let Err(ProfileError::DisplayNotFound(_)) = result {
             // Expected
         } else {
@@ -1539,11 +1571,11 @@ mod api_tests {
     #[test]
     fn test_get_all_display_profiles_success() {
         let provider = MockProfileProvider::with_test_data();
-        
+
         // Simulate get_all_display_profiles behavior
         let displays = provider.get_displays().unwrap();
         let mut results = Vec::new();
-        
+
         for display in displays {
             match provider.get_profile(&display) {
                 Ok(profile) => results.push((display, profile)),
@@ -1551,13 +1583,13 @@ mod api_tests {
                 Err(e) => panic!("Unexpected error: {}", e),
             }
         }
-        
+
         assert_eq!(results.len(), 2);
-        
+
         // Check primary display
         let primary_result = results.iter().find(|(d, _)| d.is_primary).unwrap();
         assert_eq!(primary_result.1.name, "sRGB IEC61966-2.1");
-        
+
         // Check secondary display
         let secondary_result = results.iter().find(|(d, _)| !d.is_primary).unwrap();
         assert_eq!(secondary_result.1.name, "Display P3");
@@ -1566,7 +1598,7 @@ mod api_tests {
     #[test]
     fn test_get_all_display_profiles_skip_unavailable() {
         let mut provider = MockProfileProvider::new();
-        
+
         // Add display with profile
         let display1 = Display {
             id: "with_profile".to_string(),
@@ -1581,7 +1613,7 @@ mod api_tests {
         };
         provider.add_display(display1);
         provider.set_profile("with_profile", profile1);
-        
+
         // Add display without profile
         let display2 = Display {
             id: "without_profile".to_string(),
@@ -1589,11 +1621,11 @@ mod api_tests {
             is_primary: false,
         };
         provider.add_display(display2);
-        
+
         // Simulate get_all_display_profiles behavior
         let displays = provider.get_displays().unwrap();
         let mut results = Vec::new();
-        
+
         for display in displays {
             match provider.get_profile(&display) {
                 Ok(profile) => results.push((display, profile)),
@@ -1601,7 +1633,7 @@ mod api_tests {
                 Err(e) => panic!("Unexpected error: {}", e),
             }
         }
-        
+
         // Should only include the display with a profile
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].0.id, "with_profile");
@@ -1610,12 +1642,12 @@ mod api_tests {
     #[test]
     fn test_get_primary_display_profile_data_success() {
         let provider = MockProfileProvider::with_test_data();
-        
+
         let primary = provider.get_primary_display().unwrap();
         let data = provider.get_profile_data(&primary).unwrap();
-        
+
         assert_eq!(data.len(), 128);
-        
+
         // Verify it's valid ICC data
         let profile_size = u32::from_be_bytes([data[0], data[1], data[2], data[3]]);
         assert_eq!(profile_size, 1024);
@@ -1627,7 +1659,7 @@ mod api_tests {
             linux_prefer_dbus: false,
             fallback_enabled: false,
         };
-        
+
         // Test that custom configuration is preserved
         assert!(!config.linux_prefer_dbus);
         assert!(!config.fallback_enabled);
@@ -1636,17 +1668,17 @@ mod api_tests {
     #[test]
     fn test_display_profile_provider_trait_methods() {
         let provider = MockProfileProvider::with_test_data();
-        
+
         // Test all trait methods
         let displays = provider.get_displays().unwrap();
         assert!(!displays.is_empty());
-        
+
         let primary = provider.get_primary_display().unwrap();
         assert!(primary.is_primary);
-        
+
         let profile = provider.get_profile(&primary).unwrap();
         assert!(!profile.name.is_empty());
-        
+
         let data = provider.get_profile_data(&primary).unwrap();
         assert!(!data.is_empty());
     }
@@ -1654,20 +1686,23 @@ mod api_tests {
     #[test]
     fn test_error_propagation() {
         let mut provider = MockProfileProvider::new();
-        
+
         let display = Display {
             id: "error_display".to_string(),
             name: "Error Display".to_string(),
             is_primary: true,
         };
-        
+
         provider.add_display(display.clone());
-        provider.set_failure("error_display", ProfileError::SystemError("Test error".to_string()));
-        
+        provider.set_failure(
+            "error_display",
+            ProfileError::SystemError("Test error".to_string()),
+        );
+
         // Test that errors propagate correctly
         let profile_result = provider.get_profile(&display);
         assert!(profile_result.is_err());
-        
+
         let data_result = provider.get_profile_data(&display);
         assert!(data_result.is_err());
     }
@@ -1675,7 +1710,7 @@ mod api_tests {
     #[test]
     fn test_multiple_displays_handling() {
         let mut provider = MockProfileProvider::new();
-        
+
         // Add multiple displays with different configurations
         for i in 0..5 {
             let display = Display {
@@ -1683,25 +1718,29 @@ mod api_tests {
                 name: format!("Display {}", i),
                 is_primary: i == 0,
             };
-            
+
             let profile = ProfileInfo {
                 name: format!("Profile {}", i),
                 description: Some(format!("Description {}", i)),
                 file_path: Some(PathBuf::from(format!("/path/to/profile_{}.icc", i))),
-                color_space: if i % 2 == 0 { ColorSpace::RGB } else { ColorSpace::Lab },
+                color_space: if i % 2 == 0 {
+                    ColorSpace::RGB
+                } else {
+                    ColorSpace::Lab
+                },
             };
-            
+
             provider.add_display(display);
             provider.set_profile(&format!("display_{}", i), profile);
         }
-        
+
         let displays = provider.get_displays().unwrap();
         assert_eq!(displays.len(), 5);
-        
+
         // Verify primary display
         let primary = provider.get_primary_display().unwrap();
         assert_eq!(primary.id, "display_0");
-        
+
         // Verify all profiles can be retrieved
         for display in &displays {
             let profile = provider.get_profile(display).unwrap();
@@ -1712,24 +1751,24 @@ mod api_tests {
     #[test]
     fn test_edge_cases() {
         let provider = MockProfileProvider::new();
-        
+
         // Test with no displays
         let displays = provider.get_displays().unwrap();
         assert!(displays.is_empty());
-        
+
         let primary_result = provider.get_primary_display();
         assert!(primary_result.is_err());
-        
+
         // Test with non-existent display
         let fake_display = Display {
             id: "fake".to_string(),
             name: "Fake Display".to_string(),
             is_primary: false,
         };
-        
+
         let profile_result = provider.get_profile(&fake_display);
         assert!(profile_result.is_err());
-        
+
         let data_result = provider.get_profile_data(&fake_display);
         assert!(data_result.is_err());
     }
@@ -1745,9 +1784,9 @@ mod configuration_tests {
             linux_prefer_dbus: true,
             fallback_enabled: false,
         };
-        
+
         let config2 = config1.clone();
-        
+
         assert_eq!(config1.linux_prefer_dbus, config2.linux_prefer_dbus);
         assert_eq!(config1.fallback_enabled, config2.fallback_enabled);
     }
@@ -1756,7 +1795,7 @@ mod configuration_tests {
     fn test_profile_config_debug() {
         let config = ProfileConfig::default();
         let debug_str = format!("{:?}", config);
-        
+
         assert!(debug_str.contains("ProfileConfig"));
         assert!(debug_str.contains("linux_prefer_dbus"));
         assert!(debug_str.contains("fallback_enabled"));
@@ -1766,12 +1805,24 @@ mod configuration_tests {
     fn test_profile_config_all_combinations() {
         // Test all boolean combinations
         let configs = [
-            ProfileConfig { linux_prefer_dbus: true, fallback_enabled: true },
-            ProfileConfig { linux_prefer_dbus: true, fallback_enabled: false },
-            ProfileConfig { linux_prefer_dbus: false, fallback_enabled: true },
-            ProfileConfig { linux_prefer_dbus: false, fallback_enabled: false },
+            ProfileConfig {
+                linux_prefer_dbus: true,
+                fallback_enabled: true,
+            },
+            ProfileConfig {
+                linux_prefer_dbus: true,
+                fallback_enabled: false,
+            },
+            ProfileConfig {
+                linux_prefer_dbus: false,
+                fallback_enabled: true,
+            },
+            ProfileConfig {
+                linux_prefer_dbus: false,
+                fallback_enabled: false,
+            },
         ];
-        
+
         // Verify all configurations are valid and can be created
         for config in &configs {
             assert!(config.linux_prefer_dbus || !config.linux_prefer_dbus); // Always true, but tests field access
@@ -1789,7 +1840,7 @@ mod error_handling_tests {
     fn test_profile_error_from_io_error() {
         let io_error = io::Error::new(io::ErrorKind::NotFound, "File not found");
         let profile_error = ProfileError::from(io_error);
-        
+
         if let ProfileError::IoError(msg) = profile_error {
             assert!(msg.contains("File not found"));
         } else {
@@ -1806,7 +1857,7 @@ mod error_handling_tests {
             ProfileError::SystemError("test".to_string()),
             ProfileError::ParseError("test".to_string()),
         ];
-        
+
         for error in &errors {
             let debug_str = format!("{:?}", error);
             assert!(!debug_str.is_empty());
@@ -1819,7 +1870,7 @@ mod error_handling_tests {
         let error1 = ProfileError::DisplayNotFound("test".to_string());
         let error2 = ProfileError::DisplayNotFound("test".to_string());
         let error3 = ProfileError::DisplayNotFound("different".to_string());
-        
+
         // Note: ProfileError doesn't implement PartialEq due to io::Error,
         // but we can test the display strings
         assert_eq!(format!("{}", error1), format!("{}", error2));
@@ -1828,10 +1879,9 @@ mod error_handling_tests {
 
     #[test]
     fn test_error_source_chain() {
-        
         let io_error = io::Error::new(io::ErrorKind::PermissionDenied, "Access denied");
         let profile_error = ProfileError::from(io_error);
-        
+
         // Test that the error message is preserved
         if let ProfileError::IoError(msg) = profile_error {
             assert!(msg.contains("Access denied"));

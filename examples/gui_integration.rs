@@ -14,8 +14,8 @@
 //! Run with: cargo run --example gui_integration
 
 use display_icc::{
-    DisplayProfileProvider, ProfileConfig, ProfileError, 
-    create_provider_with_config, Display, ProfileInfo
+    create_provider_with_config, Display, DisplayProfileProvider, ProfileConfig, ProfileError,
+    ProfileInfo,
 };
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -55,8 +55,8 @@ impl ProfileManager {
     fn new() -> Result<Self, ProfileError> {
         // Configuration optimized for GUI applications
         let config = ProfileConfig {
-            linux_prefer_dbus: true,  // Use faster D-Bus API on Linux
-            fallback_enabled: true,   // Ensure reliability
+            linux_prefer_dbus: true, // Use faster D-Bus API on Linux
+            fallback_enabled: true,  // Ensure reliability
         };
 
         let provider = create_provider_with_config(config)?;
@@ -89,8 +89,10 @@ impl ProfileManager {
                 }
                 Err(e) => {
                     // Log error but continue with other displays
-                    eprintln!("Warning: Failed to get profile for display '{}': {}", 
-                             display.name, e);
+                    eprintln!(
+                        "Warning: Failed to get profile for display '{}': {}",
+                        display.name, e
+                    );
                 }
             }
         }
@@ -135,9 +137,7 @@ impl ProfileManager {
     fn export_profile(&self, display_id: &str, file_path: &str) -> Result<(), ProfileError> {
         let display = {
             let state = self.state.lock().unwrap();
-            state.displays.iter()
-                .find(|d| d.id == display_id)
-                .cloned()
+            state.displays.iter().find(|d| d.id == display_id).cloned()
         };
 
         if let Some(display) = display {
@@ -156,7 +156,7 @@ mod gui_framework {
 
     pub fn render_display_list(state: &AppState) {
         println!("=== Display List Widget ===");
-        
+
         if state.is_loading {
             println!("🔄 Loading display profiles...");
             return;
@@ -175,10 +175,10 @@ mod gui_framework {
         for display in &state.displays {
             let primary_indicator = if display.is_primary { " (Primary)" } else { "" };
             println!("🖥️  {} ({}){}", display.name, display.id, primary_indicator);
-            
+
             if let Some(profile) = state.profiles.get(&display.id) {
                 println!("   📊 Profile: {} ({})", profile.name, profile.color_space);
-                
+
                 if let Some(path) = &profile.file_path {
                     println!("   📁 File: {}", path.display());
                 }
@@ -187,7 +187,7 @@ mod gui_framework {
             }
             println!();
         }
-        
+
         println!("Last updated: {:?} ago", state.last_update.elapsed());
     }
 
@@ -196,15 +196,15 @@ mod gui_framework {
         println!("Display: {}", display_name);
         println!("Profile Name: {}", profile.name);
         println!("Color Space: {}", profile.color_space);
-        
+
         if let Some(description) = &profile.description {
             println!("Description: {}", description);
         }
-        
+
         if let Some(path) = &profile.file_path {
             println!("File Path: {}", path.display());
         }
-        
+
         // Simulate color space specific UI elements
         match profile.color_space {
             display_icc::ColorSpace::RGB => {
@@ -238,7 +238,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Initialize profile manager
     let manager = ProfileManager::new()?;
-    
+
     // Simulate GUI application lifecycle
     println!("🚀 Starting GUI application...\n");
 
@@ -255,23 +255,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Simulate GUI rendering loop
     for frame in 1..=5 {
         println!("--- GUI Frame {} ---", frame);
-        
+
         let state = manager.get_state();
-        
+
         // Render main display list
         gui_framework::render_display_list(&state);
-        
+
         // Simulate user selecting a display for details
         if let Some(primary_display) = state.displays.iter().find(|d| d.is_primary) {
             if let Some(profile) = manager.get_display_profile(&primary_display.id) {
                 gui_framework::render_profile_details(&profile, &primary_display.name);
             }
         }
-        
+
         // Simulate user interactions
         if frame == 3 {
             gui_framework::simulate_user_interaction();
-            
+
             // Simulate profile export
             if let Some(primary_display) = state.displays.iter().find(|d| d.is_primary) {
                 let export_path = format!("exported_profile_frame_{}.icc", frame);
@@ -281,12 +281,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         }
-        
+
         // Check if refresh is needed
         if manager.needs_refresh() {
             println!("🔄 Profiles need refresh (30+ seconds old)");
         }
-        
+
         // Simulate frame delay
         thread::sleep(Duration::from_millis(100));
         println!();
@@ -301,6 +301,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   • Handle errors gracefully with user notifications");
 
     println!("\n✨ GUI integration example completed!");
-    
+
     Ok(())
 }
